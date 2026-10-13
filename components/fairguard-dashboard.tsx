@@ -19,7 +19,6 @@ import {
   Copy,
   Cpu,
   FileText,
-  FlaskConical,
   Gauge,
   LayoutDashboard,
   ListFilter,
@@ -59,7 +58,6 @@ import { fetchApi, ADMIN_API_KEY } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import SharedResourceTable from '@/components/shared-resource-table'
 import FairnessReceiptModal from '@/components/fairness-receipt-modal'
-import FairnessLabView from '@/components/fairness-lab-view'
 import FairnessContractsAdmin from '@/components/fairness-contracts-admin'
 
 // Fallback seeded tenants if API is loading or offline
@@ -96,8 +94,6 @@ const nav = [
   { label: 'Workload Scheduler', icon: ListFilter },
   { label: 'Resource Monitoring', icon: Cpu },
   { label: 'Noisy-Neighbor Incidents', icon: AlertTriangle },
-  { label: 'Experiments & Reports', icon: BarChart3 },
-  { label: 'Fairness Lab', icon: FlaskConical },
   { label: 'Fairness Contracts', icon: Shield },
   { label: 'Settings', icon: Settings },
 ]
@@ -568,18 +564,9 @@ export default function FairGuardDashboard({ initialTab = 'Overview' }: FairGuar
               onSelectTenant={setSelectedTenant}
               onOpenReceipt={(id: number) => setSelectedReceiptIncidentId(id)}
             />
-          ) : active === 'Fairness Lab' ? (
-            /* Fairness Lab: 3-Policy Comparison */
-            <FairnessLabView onNotify={notify} />
           ) : active === 'Fairness Contracts' ? (
             /* Fairness Contracts: Feasibility & Guarantees */
             <FairnessContractsAdmin onNotify={notify} />
-          ) : active === 'Experiments & Reports' ? (
-            /* Experiments & Reports Page */
-            <ExperimentsSection
-              onNotify={notify}
-              onRefresh={loadData}
-            />
           ) : (
             /* Settings Page */
             <SettingsSection onNotify={notify} onReset={loadData} />
@@ -645,107 +632,6 @@ function OverviewPage({
         <Metric label="Active incidents" value={incidents.filter((i: any) => i.status === 'open').length || 1} change="Needs review" icon={AlertTriangle} tone="amber" />
       </div>
 
-      <div className="overview-grid">
-        {/* Request traffic Area Chart */}
-        <section className="panel chart-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Request traffic</h2>
-              <p>Accepted and rate-limited requests across all tenants</p>
-            </div>
-            <button className="panel-action" onClick={() => onNotify('Exported traffic summary')}>
-              Details <ChevronRight size={14} />
-            </button>
-          </div>
-
-          <div className="chart-legend">
-            <span>
-              <i className="legend-blue" />
-              Accepted requests
-            </span>
-            <span>
-              <i className="legend-gray" />
-              Rate-limited / rejected
-            </span>
-          </div>
-
-          <div className="chart-wrap">
-            <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={traffic}>
-                <defs>
-                  <linearGradient id="acceptedGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2563eb" stopOpacity={0.2} />
-                    <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="#e8edf3" />
-                <XAxis dataKey="time" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a96a6' }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#8a96a6' }} />
-                <Tooltip />
-                <Area type="monotone" dataKey="accepted" stroke="#2563eb" strokeWidth={2} fill="url(#acceptedGrad)" />
-                <Line type="monotone" dataKey="rejected" stroke="#f59e0b" strokeWidth={2} dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        {/* Protection posture */}
-        <section className="panel protection-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Protection posture</h2>
-              <p>Impact-aware multi-tenant controls</p>
-            </div>
-            <Gauge size={19} className="muted-icon" />
-          </div>
-
-          <div className="posture-score">
-            <div className="score-ring">
-              <strong>94</strong>
-              <span>/ 100</span>
-            </div>
-            <div>
-              <b>Adaptive Protection Ready</b>
-              <p>Fair Round Robin actively prevents worker starvation.</p>
-            </div>
-          </div>
-
-          <div className="posture-list">
-            <div>
-              <span>
-                <span className="status-dot green" />
-                Fair Round-Robin Scheduling
-              </span>
-              <b>Enabled</b>
-            </div>
-            <div>
-              <span>
-                <span className="status-dot green" />
-                Tenant-level Sliding Quotas
-              </span>
-              <b>{tenants.length} / {tenants.length} Active</b>
-            </div>
-            <div>
-              <span>
-                <span className="status-dot amber" />
-                Noisy-neighbor detector
-              </span>
-              <b>Sustained CPU monitor</b>
-            </div>
-            <div>
-              <span>
-                <span className="status-dot green" />
-                One-click Rollback Safeguard
-              </span>
-              <b>Verified</b>
-            </div>
-          </div>
-
-          <button className="wide-secondary" onClick={() => onNotify('Protection policy settings verified')}>
-            <SlidersHorizontal size={15} /> Review controls
-          </button>
-        </section>
-      </div>
 
       {/* Incident banner */}
       {incidentOpen && (
@@ -1033,43 +919,6 @@ function TenantDetails({ tenant, traffic, onBack, onNotify, onRefresh }: any) {
       </div>
 
       <div className="overview-grid">
-        {/* Request Traffic Chart */}
-        <section className="panel chart-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Tenant request traffic</h2>
-              <p>Accepted vs Rate-Limited requests over time</p>
-            </div>
-            <button className="primary-button" onClick={handleTestBurst} disabled={bursting}>
-              <Play size={14} /> {bursting ? 'Sending...' : 'Test Request'}
-            </button>
-          </div>
-
-          <div className="chart-legend">
-            <span>
-              <i className="legend-blue" />
-              Accepted
-            </span>
-            <span>
-              <i className="legend-gray" />
-              Rejected (429)
-            </span>
-          </div>
-
-          <div className="chart-wrap">
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={tenantTraffic}>
-                <CartesianGrid vertical={false} stroke="#e8edf3" />
-                <XAxis dataKey="time" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} />
-                <Tooltip />
-                <Area type="monotone" dataKey="accepted" stroke="#2563eb" fill="#dbeafe" strokeWidth={2} />
-                <Line type="monotone" dataKey="rejected" stroke="#f59e0b" strokeWidth={2} dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
         {/* Quota & Policy Configuration */}
         <section className="panel protection-panel">
           <div className="panel-header">
@@ -1077,7 +926,12 @@ function TenantDetails({ tenant, traffic, onBack, onNotify, onRefresh }: any) {
               <h2>Tenant Quota Configuration</h2>
               <p>Adjust limits live in sliding-window rate limiter</p>
             </div>
-            <SlidersHorizontal size={18} className="muted-icon" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button className="primary-button" onClick={handleTestBurst} disabled={bursting}>
+                <Play size={14} /> {bursting ? 'Sending...' : 'Test Request'}
+              </button>
+              <SlidersHorizontal size={18} className="muted-icon" />
+            </div>
           </div>
 
           <div style={{ display: 'grid', gap: '14px', marginTop: '16px' }}>
@@ -2178,365 +2032,6 @@ function IncidentsSection({ incidents, onNotify, onRefresh, onSelectTenant, onOp
     </div>
   )
 }
-
-/* =========================================================================
-   EXPERIMENTS & REPORTS SECTION
-   ========================================================================= */
-
-function ExperimentsSection({ onNotify, onRefresh }: any) {
-  const [selectedScenario, setSelectedScenario] = useState('B')
-  const [running, setRunning] = useState(false)
-
-  // Explicit, differentiated benchmark results for every scenario (A-E)
-  const FALLBACKS: Record<string, any> = useMemo(() => ({
-    A: {
-      scenario: 'A',
-      name: 'Scenario A: Normal Traffic Baseline',
-      tenant_name: 'Multiple Tenants (Northstar, Meridian, Pioneer)',
-      improvement_pct: 98.4,
-      metric_type: 'Round-Robin Fairness Score',
-      before_latency_p95: 42.0,
-      after_latency_p95: 43.5,
-      before_cpu_percent: 44.0,
-      after_cpu_percent: 45.2,
-      summary: 'Multiple tenants submit expected traffic volume. Round-Robin ensures fair turn distribution across all queues.',
-      details: [
-        'Round-robin cycle rotated evenly across 5 tenant queues',
-        'Zero starving queues; turn latency variance < 5%',
-        'Zero rate-limit rejections (all tenants within quota)',
-        'Host CPU remained stable at 45.2%',
-      ],
-      collateral_damage: '0 innocent tenants impacted (100% fairness index)',
-      safeguard: 'Zero intervention needed',
-    },
-    B: {
-      scenario: 'B',
-      name: 'Scenario B: Single Tenant Quota Overuse',
-      tenant_name: 'Lattice Trading Core (Lattice Finance)',
-      improvement_pct: 68.9,
-      metric_type: 'Innocent Latency Recovery',
-      before_latency_p95: 148.0,
-      after_latency_p95: 46.0,
-      before_cpu_percent: 68.0,
-      after_cpu_percent: 49.0,
-      summary: 'Lattice Finance bursts 850 req/min (quota 600). Sliding window rate limiter throttles 250 requests with HTTP 429.',
-      details: [
-        '250 excess requests throttled with HTTP 429 and Retry-After header',
-        'Sliding 60s window prevented connection pool exhaustion',
-        'Innocent tenant Meridian Health latency restored from 148ms down to 46ms',
-        'Zero drop in non-violating tenant throughput',
-      ],
-      collateral_damage: 'Isolated strictly to Lattice Finance; zero collateral degradation',
-      safeguard: 'Automatic rate recovery on window slide',
-    },
-    C: {
-      scenario: 'C',
-      name: 'Scenario C: Noisy Neighbor CPU Monopolization',
-      tenant_name: 'Northstar Primary (Northstar Analytics)',
-      improvement_pct: 74.7,
-      metric_type: 'Contention Latency Reduction',
-      before_latency_p95: 174.0,
-      after_latency_p95: 44.0,
-      before_cpu_percent: 82.5,
-      after_cpu_percent: 53.0,
-      summary: 'Northstar launched 8 parallel compute-heavy jobs, saturating host CPU to 82.5%. Adaptive controller capped concurrency to 2 workers.',
-      details: [
-        'Host machine CPU exceeded 75% for 3 sustained windows',
-        'Incident INC-1042 triggered automatic concurrency reduction (-25%)',
-        'Meridian Health p95 latency recovered by 74.7% (174ms -> 44ms)',
-        'Host machine CPU brought back into safe operating zone (53%)',
-        'Rollback safeguard armed for automatic recovery',
-      ],
-      collateral_damage: 'Zero collateral damage; only the offending tenant concurrency was bounded',
-      safeguard: 'Rollback safeguard verified',
-    },
-    D: {
-      scenario: 'D',
-      name: 'Scenario D: Batch Queue Flood vs Interactive API',
-      tenant_name: 'Pioneer Fleet Tracker (Pioneer Logistics)',
-      improvement_pct: 95.8,
-      metric_type: 'Queue Wait Delay Elimination',
-      before_latency_p95: 385.0,
-      after_latency_p95: 16.0,
-      before_cpu_percent: 74.0,
-      after_cpu_percent: 58.0,
-      summary: 'Pioneer enqueued 150 batch ETL jobs. Independent per-tenant queues allowed API light requests to bypass the batch backlog entirely.',
-      details: [
-        '150 batch jobs queued in dedicated Pioneer deque',
-        'Under traditional FIFO, Meridian API requests waited 420ms behind batch jobs',
-        'Fair Round-Robin scheduled Pioneer for 1 turn, then yielded immediately to Meridian',
-        'Interactive API requests scheduled in under 16ms (95.8% wait reduction)',
-      ],
-      collateral_damage: 'Zero starvation: Pioneer jobs progressed steadily without blocking interactive users',
-      safeguard: 'Dynamic turn weighting',
-    },
-    E: {
-      scenario: 'E',
-      name: 'Scenario E: Automatic Recovery & Safeguard Rollback',
-      tenant_name: 'Northstar Primary (Northstar Analytics)',
-      improvement_pct: 100.0,
-      metric_type: 'Quota Capacity Restored',
-      before_latency_p95: 54.0,
-      after_latency_p95: 48.0,
-      before_cpu_percent: 48.0,
-      after_cpu_percent: 51.0,
-      summary: 'Northstar workload normalized. Controller detected sustained low pressure and safely reversed the temporary concurrency cap.',
-      details: [
-        'Controller confirmed CPU remained below 60% for cooldown period (300s)',
-        'Rollback action executed via /api/protection/rollback',
-        'Northstar max concurrency restored from 19 back to original 25',
-        'Zero manual human intervention required; audit trail fully logged',
-      ],
-      collateral_damage: 'Zero policy drift: 100% capacity safely restored',
-      safeguard: 'Complete rollback audit verified',
-    },
-  }), [])
-
-  // Pre-load Scenario B so results are visible immediately on mount (NEVER 59%)
-  const [result, setResult] = useState<any>(FALLBACKS.B)
-
-  const scenarios = [
-    {
-      id: 'A',
-      name: 'Scenario A: Normal Traffic Baseline',
-      desc: 'Multiple tenants submit expected request volume. Evaluates Round-Robin turn fairness and zero starvation.',
-      expectedMetric: 'Fairness Score: 98.4%',
-    },
-    {
-      id: 'B',
-      name: 'Scenario B: Single Tenant Quota Overuse',
-      desc: 'Lattice Finance bursts 850 rpm (quota 600). Sliding-window limits throttle 250 requests with HTTP 429 without collateral damage.',
-      expectedMetric: 'Innocent Latency Recovery: 68.9%',
-    },
-    {
-      id: 'C',
-      name: 'Scenario C: Noisy Neighbor CPU Monopolization',
-      desc: 'Northstar Analytics launches 8 heavy CPU jobs (host CPU 82.5%). Adaptive controller caps concurrency from 4 to 2 workers.',
-      expectedMetric: 'Contention Latency Reduction: 74.7%',
-    },
-    {
-      id: 'D',
-      name: 'Scenario D: Batch Queue Flood vs Interactive API',
-      desc: 'Pioneer enqueues 150 batch jobs. Independent per-tenant queues allow Meridian light API requests to bypass the backlog immediately.',
-      expectedMetric: 'Queue Wait Delay Eliminated: 95.8%',
-    },
-    {
-      id: 'E',
-      name: 'Scenario E: Automatic Recovery & Safeguard Rollback',
-      desc: 'Northstar CPU pressure normalizes. Controller detects sustained normal condition (<50%) and cleanly restores original concurrency.',
-      expectedMetric: 'Capacity Restored: 100.0%',
-    },
-  ]
-
-  const handleRunScenario = async () => {
-    try {
-      setRunning(true)
-      const res = await fetchApi<any>('/experiments/scenario', {
-        method: 'POST',
-        body: JSON.stringify({ scenario: selectedScenario }),
-      }).catch(() => null)
-      const data = res || FALLBACKS[selectedScenario] || FALLBACKS.B
-      setResult(data)
-      onNotify(`${data.name || `Scenario ${selectedScenario}`} completed! Measured outcome updated.`)
-      onRefresh()
-    } finally {
-      setRunning(false)
-    }
-  }
-
-  return (
-    <div className="page-view">
-      <section className="company-hero panel">
-        <div>
-          <div className="eyebrow">Repeatable Validation Scenarios</div>
-          <h2>Controlled Scenarios A through E & Performance Verification Reports</h2>
-          <p>Run end-to-end demonstrations comparing before vs after metrics. Every scenario exhibits distinct, calibrated measurements.</p>
-        </div>
-        <Badge tone="blue">Automated Verification</Badge>
-      </section>
-
-      <div className="overview-grid">
-        {/* Scenario Selection */}
-        <section className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>Select Scenario</h2>
-              <p>Choose test condition to evaluate</p>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gap: '10px', marginTop: '14px' }}>
-            {scenarios.map((s) => (
-              <label
-                key={s.id}
-                style={{
-                  display: 'flex',
-                  gap: '10px',
-                  alignItems: 'flex-start',
-                  padding: '12px',
-                  border: selectedScenario === s.id ? '1px solid #2563eb' : '1px solid #e5eaf0',
-                  borderRadius: '7px',
-                  background: selectedScenario === s.id ? '#edf3ff' : '#fff',
-                  cursor: 'pointer',
-                }}
-              >
-                <input
-                  type="radio"
-                  name="scenario"
-                  checked={selectedScenario === s.id}
-                  onChange={() => {
-                    setSelectedScenario(s.id)
-                    setResult(FALLBACKS[s.id] || FALLBACKS.A)
-                  }}
-                  style={{ marginTop: '3px' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <b style={{ fontSize: '12px' }}>{s.name}</b>
-                    <span className="mono" style={{ fontSize: '10px', color: '#2563eb', fontWeight: 600 }}>
-                      {s.expectedMetric}
-                    </span>
-                  </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#687588', lineHeight: 1.5 }}>{s.desc}</p>
-                </div>
-              </label>
-            ))}
-            <button className="primary-button" onClick={handleRunScenario} disabled={running} style={{ marginTop: '8px' }}>
-              <Play size={14} /> {running ? 'Running scenario...' : 'Run Selected Scenario'}
-            </button>
-          </div>
-        </section>
-
-        {/* Distinct Measured Outcome Card */}
-        <section className="panel protection-panel">
-          <div className="panel-header">
-            <div>
-              <h2>Measured Outcome: {result ? result.name : `Scenario ${selectedScenario}`}</h2>
-              <p>Before vs after quantitative observations</p>
-            </div>
-            <BarChart3 size={18} className="muted-icon" />
-          </div>
-
-          {result ? (
-            <div style={{ marginTop: '16px' }}>
-              <div className="posture-score">
-                <div className="score-ring">
-                  <strong>{result.improvement_pct}%</strong>
-                  <span>{result.metric_type}</span>
-                </div>
-                <div>
-                  <b>{result.metric_type}: {result.improvement_pct}%</b>
-                  <p style={{ fontSize: '11px', color: '#687588', marginTop: '3px' }}>{result.summary}</p>
-                </div>
-              </div>
-
-              {/* Before vs After Metric Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '14px' }}>
-                <div style={{ background: '#fff5f5', padding: '10px', borderRadius: '6px', border: '1px solid #fed7d7' }}>
-                  <span style={{ fontSize: '10px', color: '#9b2c2c' }}>Before Protection (p95)</span>
-                  <strong className="mono" style={{ display: 'block', fontSize: '18px', color: '#9b2c2c', marginTop: '2px' }}>
-                    {result.before_latency_p95} ms
-                  </strong>
-                  <span style={{ fontSize: '10px', color: '#9b2c2c' }}>Host CPU: {result.before_cpu_percent}%</span>
-                </div>
-
-                <div style={{ background: '#f0fdf4', padding: '10px', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
-                  <span style={{ fontSize: '10px', color: '#166534' }}>After FairGuard (p95)</span>
-                  <strong className="mono" style={{ display: 'block', fontSize: '18px', color: '#166534', marginTop: '2px' }}>
-                    {result.after_latency_p95} ms
-                  </strong>
-                  <span style={{ fontSize: '10px', color: '#166534' }}>Host CPU: {result.after_cpu_percent}%</span>
-                </div>
-              </div>
-
-              {/* Key Technical Observations */}
-              <div style={{ marginTop: '14px', borderTop: '1px solid #e5eaf0', paddingTop: '10px' }}>
-                <b style={{ fontSize: '11px', color: '#334155' }}>Key Technical Observations:</b>
-                <ul style={{ margin: '6px 0 0 16px', padding: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.6 }}>
-                  {result.details && result.details.map((d: string, idx: number) => (
-                    <li key={idx}>{d}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Collateral Damage Audit */}
-              <div style={{ marginTop: '12px', padding: '8px 10px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px' }}>
-                <b>Collateral Damage Audit:</b>{' '}
-                <span style={{ color: '#16a34a' }}>{result.collateral_damage}</span>
-              </div>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px 10px', color: '#8a96a6', fontSize: '12px' }}>
-              Select a scenario on the left and click <b>Run Selected Scenario</b> to record live before/after observations.
-            </div>
-          )}
-        </section>
-      </div>
-
-      {/* Comprehensive Multi-Scenario Performance Comparison Matrix (Eliminates 59% for all) */}
-      <section className="panel table-panel" style={{ marginTop: '20px' }}>
-        <div className="panel-header">
-          <div>
-            <h2>Comprehensive Scenario Verification & Performance Matrix (A through E)</h2>
-            <p>Side-by-side evidence that every scenario yields distinct, verifiable improvements without uniform numbers</p>
-          </div>
-          <Badge tone="green">All 5 Scenarios Calibrated</Badge>
-        </div>
-
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Scenario</th>
-                <th>Target Tenant / Condition</th>
-                <th>Baseline (Before)</th>
-                <th>With FairGuard (After)</th>
-                <th>Measured Improvement</th>
-                <th>Collateral Damage Audit</th>
-                <th>Safeguard Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.values(FALLBACKS).map((item: any) => (
-                <tr
-                  key={item.scenario}
-                  style={{
-                    background: item.scenario === selectedScenario ? '#f0fdf4' : 'inherit',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    setSelectedScenario(item.scenario)
-                    setResult(item)
-                  }}
-                >
-                  <td className="mono">
-                    <b>{item.scenario} &bull; {item.name.split(':')[1] || item.name}</b>
-                  </td>
-                  <td>{item.tenant_name}</td>
-                  <td className="mono">
-                    <span style={{ color: '#991b1b' }}>{item.before_latency_p95} ms</span> &bull; {item.before_cpu_percent}% CPU
-                  </td>
-                  <td className="mono">
-                    <span style={{ color: '#166534', fontWeight: 600 }}>{item.after_latency_p95} ms</span> &bull; {item.after_cpu_percent}% CPU
-                  </td>
-                  <td>
-                    <Badge tone="green">
-                      {item.improvement_pct}% ({item.metric_type})
-                    </Badge>
-                  </td>
-                  <td style={{ fontSize: '11px', color: '#166534' }}>{item.collateral_damage}</td>
-                  <td>
-                    <Badge tone="blue">{item.safeguard}</Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  )
-}
-
 
 /* =========================================================================
    SETTINGS SECTION

@@ -1,7 +1,12 @@
 'use client'
 
-import TenantRouteWrapper from '@/components/tenant-guard'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function TenantReportsPage() {
-  return <TenantRouteWrapper initialTab="Reports" />
+  const router = useRouter()
+  useEffect(() => {
+    router.replace('/tenant')
+  }, [router])
+  return null
 }

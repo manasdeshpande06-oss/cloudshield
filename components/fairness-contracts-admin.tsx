@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   Edit2,
+  FileText,
   HelpCircle,
   Plus,
   RefreshCw,
@@ -18,6 +19,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { fetchApi } from '@/lib/api'
+import FairnessReceiptModal from '@/components/fairness-receipt-modal'
 
 interface Contract {
   id: number
@@ -45,6 +47,7 @@ export default function FairnessContractsAdmin({
   const [form, setForm] = useState<Partial<Contract>>({})
   const [saving, setSaving] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [selectedReceiptTenantId, setSelectedReceiptTenantId] = useState<string | null>(null)
 
   const loadContracts = useCallback(async () => {
     setLoading(true)
@@ -378,13 +381,33 @@ export default function FairnessContractsAdmin({
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <button
-                        onClick={() => handleEdit(c)}
-                        className="secondary-button"
-                        style={{ padding: '4px 8px', fontSize: 11, height: 26 }}
-                      >
-                        <Edit2 size={12} /> Edit
-                      </button>
+                      <div style={{ display: 'inline-flex', gap: 6, justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => setSelectedReceiptTenantId(c.tenant_id)}
+                          className="secondary-button"
+                          style={{
+                            padding: '4px 8px',
+                            fontSize: 11,
+                            height: 26,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            color: '#4338ca',
+                            borderColor: '#c7d2fe',
+                            background: '#eef2ff',
+                          }}
+                          title="View Verifiable Fairness Receipt"
+                        >
+                          <FileText size={12} /> Receipt
+                        </button>
+                        <button
+                          onClick={() => handleEdit(c)}
+                          className="secondary-button"
+                          style={{ padding: '4px 8px', fontSize: 11, height: 26 }}
+                        >
+                          <Edit2 size={12} /> Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -393,6 +416,14 @@ export default function FairnessContractsAdmin({
           </table>
         </div>
       </section>
+
+      {/* Verifiable Fairness Receipt Modal */}
+      {selectedReceiptTenantId && (
+        <FairnessReceiptModal
+          tenantId={selectedReceiptTenantId}
+          onClose={() => setSelectedReceiptTenantId(null)}
+        />
+      )}
     </div>
   )
 }
