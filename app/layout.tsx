@@ -1,11 +1,13 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { AuthProvider } from '@/lib/auth-context'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: 'CloudShield FairGuard — Multi-Tenant Resource Fairness Platform',
+  description:
+    'FairGuard protects your shared cloud infrastructure with adaptive fair scheduling, noisy-neighbor detection, and explainable resource attribution.',
+  generator: 'CloudShield v0.3.0',
   icons: {
     icon: [
       {
@@ -40,8 +42,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      {/* Google Fonts — DM Serif Display + Inter */}
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="antialiased">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
